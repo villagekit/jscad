@@ -7,29 +7,32 @@
 
 const M2_5_NUT = { diameter: 2.5, height: 2 }
 const M2_5_BOLT = { diameter: 2.5 }
-const BOARD_PLATE_SIZE = { x: 50, y: 30, z: 5 }
-const BOARD_UNDER_SPACER = { diameter: 5.254, height: 2 }
+const BOARD_SIZE = { x: 48.523 + 7 /* extra for esp2866 */ , y: 39.370}
+const BOARD_SIZE_TOLERANCE = 5
+const BOARD_UNDER_SPACER = { diameter: 5.254, height: 3.76 }
+const BOARD_ABOVE_SPACE = 22
+const PLATE_THICKNESS = 3
 const BOARD_CONNECTORS = [
   {
-    location: { x: 5, y: 5 },
+    location: { x: 2.627, y: 2.673 },
     bolt: M2_5_BOLT,
     nut: M2_5_NUT,
     spacer: BOARD_UNDER_SPACER
   },
   {
-    location: { x: 5, y: 25 },
+    location: { x: 2.627, y: 36.697 },
     bolt: M2_5_BOLT,
     nut: M2_5_NUT,
     spacer: BOARD_UNDER_SPACER
   },
   {
-    location: { x: 45, y: 5 },
+    location: { x: 45.896, y: 2.673 },
     bolt: M2_5_BOLT,
     nut: M2_5_NUT,
     spacer: BOARD_UNDER_SPACER
   },
   {
-    location: { x: 45, y: 25 },
+    location: { x: 45.896, y: 36.697 },
     bolt: M2_5_BOLT,
     nut: M2_5_NUT,
     spacer: BOARD_UNDER_SPACER
@@ -51,15 +54,15 @@ function main () {
 
 function BoardPlate () {
   return CSG.cube({
-    corner1: [0, 0, 0],
-    corner2: [BOARD_PLATE_SIZE.x, BOARD_PLATE_SIZE.y, BOARD_PLATE_SIZE.z]
+    corner1: [-BOARD_SIZE_TOLERANCE, -BOARD_SIZE_TOLERANCE, 0],
+    corner2: [BOARD_SIZE.x + BOARD_SIZE_TOLERANCE, BOARD_SIZE.y + BOARD_SIZE_TOLERANCE, PLATE_THICKNESS]
   })
 }
 
 function BoardConnectorSpacer({ location, spacer }) {
   return CSG.cylinder({
-    start: [location.x, location.y, BOARD_PLATE_SIZE.z],
-    end: [location.x, location.y, BOARD_PLATE_SIZE.z + spacer.height],
+    start: [location.x, location.y, PLATE_THICKNESS],
+    end: [location.x, location.y, PLATE_THICKNESS + spacer.height],
     radius: spacer.diameter / 2,
   })
 }
