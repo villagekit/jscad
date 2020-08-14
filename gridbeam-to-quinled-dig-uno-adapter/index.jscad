@@ -54,16 +54,28 @@ const BOARD_CONNECTORS = [
     spacer: BOARD_UNDER_SPACER
   }
 ]
-const GRID_BOLT_HOLE_DIAMETER = 8
+const GRID_BOLT = { diameter: 8, height: 70 }
+const GRID_CONNECTORS = [
+  {
+    location: { x: (BOARD.size.x / 2) - 40, y: BOARD.size.y / 2 },
+    bolt: GRID_BOLT
+  },
+  {
+    location: { x: (BOARD.size.x / 2) + 40, y: BOARD.size.y / 2 },
+    bolt: GRID_BOLT
+  }
+]
 const CYLINDER_RESOLUTION = 16
 
 function main () {
   return difference(
     union(
       BoardPlate(),
-      ...BOARD_CONNECTORS.map(BoardConnectorSpacer)
+      ...BOARD_CONNECTORS.map(BoardConnectorSpacer),
+      ...GRID_CONNECTORS.map(GridConnector)
     ),
-    ...BOARD_CONNECTORS.map(BoardConnectorDrillHole)
+    ...BOARD_CONNECTORS.map(BoardConnectorDrillHole),
+    ...GRID_CONNECTORS.map(GridConnectorBoltHole)
   )
 }
 
@@ -91,5 +103,19 @@ function BoardConnectorDrillHole({ location, spacer, drill }) {
   })
 }
 
-function GridConnector() {}
-function GridConnectorBoltHole () {}
+function GridConnector({ location, bolt }) {
+  return CSG.cylinder({
+    start: [location.x, location.y, 0],
+    end: [location.x, location.y, BOARD.plate.height],
+    radius: (bolt.diameter + 4) / 2,
+    resolution: CYLINDER_RESOLUTION
+  })
+}
+function GridConnectorBoltHole ({ location, bolt }) {
+  return CSG.cylinder({
+    start: [location.x, location.y, 0],
+    end: [location.x, location.y, bolt.height],
+    radius: bolt.diameter / 2,
+    resolution: CYLINDER_RESOLUTION
+  })
+}
