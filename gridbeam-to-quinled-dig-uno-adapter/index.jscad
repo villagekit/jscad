@@ -8,11 +8,22 @@
 const M2_NUT = { diameter: 2, height: 2 }
 const M2_BOLT = { diameter: 2, height: 8 }
 const M2_BOLT_DRILL = { diameter: 1.6, height: 8 }
-const BOARD_SIZE = { x: 48.523 + 7 /* extra for esp2866 */ , y: 39.370}
-const BOARD_SIZE_TOLERANCE = 5
-const PLATE_THICKNESS = 3
-const BOARD_UNDER_SPACER = { diameter: 5.254, height: M2_BOLT_DRILL.height - PLATE_THICKNESS + 2 }
-const BOARD_ABOVE_SPACE = 22
+const BOARD = {
+  size: {
+    x: 48.523 + 7 /* extra for esp2866 */,
+    y: 39.370,
+    '-z': 3.76,
+    z: 22,
+    tolerance: 5,
+  },
+  plate: {
+    height: 3
+  }
+}
+const BOARD_UNDER_SPACER = {
+  diameter: 5.254,
+  height: M2_BOLT_DRILL.height - BOARD.plate.height + 2
+}
 const BOARD_CONNECTORS = [
   {
     location: { x: 2.627, y: 2.673 },
@@ -60,15 +71,15 @@ function main () {
 
 function BoardPlate () {
   return CSG.cube({
-    corner1: [-BOARD_SIZE_TOLERANCE, -BOARD_SIZE_TOLERANCE, 0],
-    corner2: [BOARD_SIZE.x + BOARD_SIZE_TOLERANCE, BOARD_SIZE.y + BOARD_SIZE_TOLERANCE, PLATE_THICKNESS]
+    corner1: [-BOARD.size.tolerance, -BOARD.size.tolerance, 0],
+    corner2: [BOARD.size.x + BOARD.size.tolerance, BOARD.size.y + BOARD.size.tolerance, BOARD.plate.height]
   })
 }
 
 function BoardConnectorSpacer({ location, spacer }) {
   return CSG.cylinder({
-    start: [location.x, location.y, PLATE_THICKNESS],
-    end: [location.x, location.y, PLATE_THICKNESS + spacer.height],
+    start: [location.x, location.y, BOARD.plate.height],
+    end: [location.x, location.y, BOARD.plate.height + spacer.height],
     radius: spacer.diameter / 2,
   })
 }
@@ -93,8 +104,8 @@ function BoardConnectorNutHole({ location, nut }) {
 
 function BoardConnectorDrillHole({ location, spacer, drill }) {
   return CSG.cylinder({
-    start: [location.x, location.y, PLATE_THICKNESS + spacer.height],
-    end: [location.x, location.y, PLATE_THICKNESS + spacer.height - drill.height],
+    start: [location.x, location.y, BOARD.plate.height + spacer.height],
+    end: [location.x, location.y, BOARD.plate.height + spacer.height - drill.height],
     radius: drill.diameter / 2,
     resolution: CYLINDER_RESOLUTION
   })
