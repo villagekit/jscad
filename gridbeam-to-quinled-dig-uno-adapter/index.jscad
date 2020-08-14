@@ -10,7 +10,7 @@ const M2_BOLT = { diameter: 2, height: 8 }
 const M2_BOLT_DRILL = { diameter: 1.6, height: 8 }
 const BOARD = {
   size: {
-    x: 48.523 + 7 /* extra for esp2866 */,
+    x: 48.523 /* + 7 extra for esp2866 */,
     y: 39.370,
     '-z': 3.76,
     z: 22,
@@ -70,20 +70,35 @@ const CYLINDER_RESOLUTION = 16
 function main () {
   return difference(
     union(
-      BoardPlate(),
+      BoardPlate(BOARD_CONNECTORS),
       ...BOARD_CONNECTORS.map(BoardConnectorSpacer),
-      ...GRID_CONNECTORS.map(GridConnector)
+      GridConnectors(GRID_CONNECTORS)
     ),
     ...BOARD_CONNECTORS.map(BoardConnectorDrillHole),
     ...GRID_CONNECTORS.map(GridConnectorBoltHole)
   )
 }
 
-function BoardPlate () {
+function BoardPlate (boardConnectors) {
+  /*
   return CSG.cube({
     corner1: [-BOARD.size.tolerance, -BOARD.size.tolerance, 0],
     corner2: [BOARD.size.x + BOARD.size.tolerance, BOARD.size.y + BOARD.size.tolerance, BOARD.plate.height]
   })
+  */
+  return linear_extrude(
+    { height: BOARD.plate.height },
+    chain_hull(
+      { closed: true },
+      boardConnectors.map(({ location, spacer }) => {
+        return CAG.circle({
+          center: [location.x, location.y],
+          radius: spacer.diameter / 2,
+          resolution: CYLINDER_RESOLUTION
+        })
+      })
+    )
+  )
 }
 
 function BoardConnectorSpacer({ location, spacer }) {
@@ -103,11 +118,17 @@ function BoardConnectorDrillHole({ location, spacer, drill }) {
   })
 }
 
-function GridConnector({ location, bolt }) {
-  return CSG.cylinder({
-    start: [location.x, location.y, 0],
-    end: [location.x, location.y, BOARD.plate.height],
-    radius: (bolt.diameter + 4) / 2,
+function GridConnectors(gridConnectors) {
+  return linear_extrude(
+    { height: BOARD.plate.height },
+    chain_hull(gridConnectors.map(GridConnector2d))
+  )
+}
+
+function GridConnector2d({ location, bolt }) {
+  return CAG.circle({
+    center: [location.x, location.y],
+    radius: (bolt.diameter + 6) / 2,
     resolution: CYLINDER_RESOLUTION
   })
 }
