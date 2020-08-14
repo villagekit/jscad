@@ -64,8 +64,6 @@ function main () {
       ...BOARD_CONNECTORS.map(BoardConnectorSpacer)
     ),
     ...BOARD_CONNECTORS.map(BoardConnectorDrillHole)
-    // ...BOARD_CONNECTORS.map(BoardConnectorBoltHole),
-    // ...BOARD_CONNECTORS.map(BoardConnectorNutHole)
   )
 }
 
@@ -84,24 +82,6 @@ function BoardConnectorSpacer({ location, spacer }) {
   })
 }
 
-function BoardConnectorBoltHole({ location, bolt }) {
-  return CSG.cylinder({
-    start: [location.x, location.y, -100],
-    end: [location.x, location.y, 100],
-    radius: bolt.diameter / 2,
-    resolution: CYLINDER_RESOLUTION
-  })
-}
-
-function BoardConnectorNutHole({ location, nut }) {
-  return CSG.cylinder({
-    start: [location.x, location.y, 0],
-    end: [location.x, location.y, 1],
-    radius: hexDiameter(nut.diameter) / 2,
-    resolution: 6
-  })
-}
-
 function BoardConnectorDrillHole({ location, spacer, drill }) {
   return CSG.cylinder({
     start: [location.x, location.y, BOARD.plate.height + spacer.height],
@@ -113,8 +93,3 @@ function BoardConnectorDrillHole({ location, spacer, drill }) {
 
 function GridConnector() {}
 function GridConnectorBoltHole () {}
-function GridConnectorHeadHole () {}
-
-function hexDiameter (diameter) {
-  return diameter * ( 2 / sqrt (3))
-}
