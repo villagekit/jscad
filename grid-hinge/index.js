@@ -37,24 +37,50 @@ function main(params) {
   return union(
     difference(
       union(
-        hingeLeafPlate(),
+        hingeLeaf(),
         rotate(
           [0, 0, hingeRotation],
-          hingeLeafPlate().mirroredX()
+          hingeLeaf().mirroredX()
         )
       ),
       hingeKnucklesCut(),
+      ...hingeBoltCuts(),
       ...knuckles.subtractions
     ),
     ...knuckles.additions
   )
 }
 
-function hingeLeafPlate() {
+function hingeLeaf() {
   return CSG.cube({
     corner1: [0, 0, 0],
     corner2: [leafWidth, leafThickness, leafHeight],
   })
+}
+
+function hingeBoltCuts() {
+  let bolts = []
+  
+  for (let xIndex = 0; xIndex < HINGE_GRID_WIDTH; xIndex++) {
+    for (let yIndex = 0; yIndex < HINGE_GRID_HEIGHT; yIndex++) {
+      const x = (1/2 + xIndex) * GRID_SPACING
+      const y = (1/2 + yIndex) * GRID_SPACING
+      bolts.push(CSG.cylinder({
+        start: [x, -EPSILON, y],
+        end: [x, leafThickness + EPSILON, y],
+        radius: HOLE_DIAMETER / 2,
+        resolution: CYLINDER_RESOLUTION
+      }))
+      bolts.push(CSG.cylinder({
+        start: [-x, -EPSILON, y],
+        end: [-x, leafThickness + EPSILON, y],
+        radius: HOLE_DIAMETER / 2,
+        resolution: CYLINDER_RESOLUTION
+      }))
+    }
+  }
+  
+  return bolts
 }
 
 function hingeKnucklesCut() {
