@@ -27,10 +27,13 @@ const pinRadius = HINGE_THICKNESS / 2
 
 const totalClearanceHeight = knuckleClearance * (HINGE_KNUCKLE_COUNT - 1)
 const knuckleHeight = (leafHeight - totalClearanceHeight) / HINGE_KNUCKLE_COUNT
-  
+const knuckleHoleHeight = knuckleHeight + 2 * knuckleClearance
+
 const hingeRotation = 0
 
+
 function main(params) {
+  const knuckles = hingeKnuckles()
   return union(
     difference(
       union(
@@ -40,14 +43,14 @@ function main(params) {
           hingeLeafPlate().mirroredX()
         )
       ),
-      hingeKnucklesCut()
+      hingeKnucklesCut(),
+      ...knuckles.subtractions
     ),
-    hingeKnuckles()
+    ...knuckles.additions
   )
 }
 
 function hingeLeafPlate() {
-
   return CSG.cube({
     corner1: [0, 0, 0],
     corner2: [leafWidth, leafThickness, leafHeight],
@@ -63,7 +66,8 @@ function hingeKnucklesCut() {
 }
 
 function hingeKnuckles() {
-  const knuckles = []
+  const additions = []
+  const subtractions = []
 
   for (var i = 0; i < HINGE_KNUCKLE_COUNT; i++) {
     const isEven = i % 2 === 0
@@ -77,21 +81,32 @@ function hingeKnuckles() {
     })
     
     if (isEven) {
-      const gusset = CSG.cube({
-        corner1: [0, 0, startHeight],
-        corner2: [leafWidth, leafThickness, startHeight + knuckleHeight]
-      })
-      knuckles.push(
+      const gusset = translate(
+        [0, 0, startHeight],
+        hingeGusset({ height: knuckleHeight})
+      )
+      const gussetHole = translate(
+        [0, 0, startHeight - knuckleClearance],
+        hingeGusset({ height: knuckleHoleHeight }).mirroredY()
+      ).mirroredX()
+      
+      additions.push(
         union(
           outerCylinder,
           gusset
         )
       )
+      subtractions.push(gussetHole)
     } else {
-      const gusset = CSG.cube({
-        corner1: [0, 0, startHeight],
-        corner2: [-leafWidth, leafThickness, startHeight + knuckleHeight]
-      })
+      const gusset = translate(
+        [0, 0, startHeight],
+        hingeGusset({ height: knuckleHeight }).mirroredX()
+      )
+      const gussetHole = translate(
+        [0, 0, startHeight - knuckleClearance],
+        hingeGusset({ height: knuckleHoleHeight }).mirroredX().mirroredY()
+      ).mirroredX()
+      
       const shaftHole = translate(
         [0, 0, startHeight - knuckleClearance],
         hingeShaft({
@@ -107,7 +122,7 @@ function hingeKnuckles() {
         })
       )
     
-      knuckles.push(
+      additions.push(
         union(
           difference(
             union(
@@ -119,10 +134,36 @@ function hingeKnuckles() {
           shaft
         )
       )
+      subtractions.push(gussetHole)
     }
   }
   
-  return knuckles
+  return {
+    additions,
+    subtractions
+  }
+}
+
+function hingeGusset({ height }) {
+  let path = new CSG.Path2D([[0, 0], [0, -knuckleThickness]])
+  path = path.appendBezier([
+    [0, -knuckleThickness],
+    [knuckleThickness, -knuckleThickness],
+    [knuckleThickness, 0],
+    [knuckleThickness * 2, 0]
+  ], { resolution: CYLINDER_RESOLUTION })
+  path = path.close()
+  const profile = path.innerToCAG()
+  const strengthener = linear_extrude({ height }, profile)
+
+    
+  return union(
+    strengthener,
+    CSG.cube({
+      corner1: [0, 0, 0],
+      corner2: [knuckleThickness + knuckleClearance, leafThickness, height]
+    })
+  )
 }
 
 function hingeShaft({ height, radius }) {
