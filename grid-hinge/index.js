@@ -2,7 +2,9 @@
 // author: Michael Williams
 // license: CC-BY-SA
 // description: a grid-compatible hinge
-// attributions: inspired by Rohin Gosling's Parametric Caged Bearing
+// attributions:
+// - Rohin Gosling's Parametric Caged Bearing
+// - J-Max's Perfect (3d Printed) Hinge
 
 const GRID_SPACING = 40
 const HOLE_DIAMETER = 8
@@ -13,7 +15,7 @@ const HINGE_THICKNESS = 4
 const HINGE_KNUCKLE_COUNT = 3
 const HINGE_KNUCKLE_CLEARANCE = 0.5
 
-const CYLINDER_RESOLUTION = 16
+const CYLINDER_RESOLUTION = 64
 const EPSILON = 1e-4
 
 const leafHeight = GRID_SPACING * HINGE_GRID_HEIGHT
@@ -90,20 +92,31 @@ function hingeKnuckles() {
         corner1: [0, 0, startHeight],
         corner2: [-leafWidth, leafThickness, startHeight + knuckleHeight]
       })
-      const innerCylinder = CSG.cylinder({
-        start: [0, 0, startHeight],
-        end: [0, 0, startHeight + knuckleHeight],
-        radius: pinRadius + knuckleClearance,
-        resolution: CYLINDER_RESOLUTION,
-      })
+      const shaftHole = translate(
+        [0, 0, startHeight - knuckleClearance],
+        hingeShaft({
+          height: knuckleHeight + 2 * knuckleClearance,
+          radius: pinRadius + knuckleClearance
+        })
+      )
+      const shaft = translate(
+        [0, 0, startHeight - knuckleClearance],
+        hingeShaft({
+          height: knuckleHeight + 2 * knuckleClearance,
+          radius: pinRadius
+        })
+      )
     
       knuckles.push(
-        difference(
-          union(
-            outerCylinder,
-            gusset
+        union(
+          difference(
+            union(
+              outerCylinder,
+              gusset
+            ),
+            shaftHole
           ),
-          innerCylinder
+          shaft
         )
       )
     }
@@ -112,11 +125,19 @@ function hingeKnuckles() {
   return knuckles
 }
 
-function hingePin() {
-  return CSG.cylinder({
-    start: [0, 0, 0],
-    end: [0, 0, leafHeight],
-    radius: pinRadius,
-    resolution: CYLINDER_RESOLUTION,
-  })
+function hingeShaft({ height, radius }) {
+  let path = new CSG.Path2D([[0, 0], [radius, 0]])
+  path = path.appendBezier([
+    [radius, 0],
+    [0, height / 2],
+    [radius, height]
+  ], { resolution: CYLINDER_RESOLUTION })
+  path = path.appendPoint([0, height])
+  path = path.close()
+
+  const profile = path.innerToCAG()
+
+  return rotate_extrude({
+    fn: CYLINDER_RESOLUTION
+  }, profile)
 }
