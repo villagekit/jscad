@@ -11,7 +11,6 @@ const HINGE_GRID_HEIGHT = 2
 const HINGE_GRID_WIDTH = 1
 const HINGE_THICKNESS = 4
 const HINGE_KNUCKLE_COUNT = 3
-const HINGE_PIN_RADIUS = HINGE_THICKNESS / 2
 const HINGE_KNUCKLE_CLEARANCE = 0.5
 
 const CYLINDER_RESOLUTION = 16
@@ -22,7 +21,7 @@ const leafWidth = GRID_SPACING * HINGE_GRID_WIDTH
 const leafThickness = HINGE_THICKNESS
 const knuckleThickness = HINGE_THICKNESS
 const knuckleClearance = HINGE_KNUCKLE_CLEARANCE
-const pinRadius = HINGE_PIN_RADIUS
+const pinRadius = HINGE_THICKNESS / 2
 
 const totalClearanceHeight = knuckleClearance * (HINGE_KNUCKLE_COUNT - 1)
 const knuckleHeight = (leafHeight - totalClearanceHeight) / HINGE_KNUCKLE_COUNT
@@ -41,8 +40,7 @@ function main(params) {
       ),
       hingeKnucklesCut()
     ),
-    hingeKnuckles(),
-    hingePin()
+    hingeKnuckles()
   )
 }
 
@@ -55,7 +53,7 @@ function hingeLeafPlate() {
 }
 
 function hingeKnucklesCut() {
-  const cutRadius = pinRadius + knuckleThickness + 2 * knuckleClearance
+  const cutRadius = 2 * pinRadius + knuckleClearance
   return CSG.cube({
      corner1: [-cutRadius, -cutRadius, -EPSILON],
      corner2: [cutRadius, cutRadius, leafHeight + EPSILON],
@@ -72,7 +70,7 @@ function hingeKnuckles() {
     const outerCylinder = CSG.cylinder({
       start: [0, 0, startHeight],
       end: [0, 0, startHeight + knuckleHeight],
-      radius: pinRadius + knuckleThickness + knuckleClearance,
+      radius: pinRadius * 2,
       resolution: CYLINDER_RESOLUTION,
     })
     
