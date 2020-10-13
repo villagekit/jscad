@@ -15,6 +15,7 @@ const HINGE_THICKNESS = 4
 const HINGE_KNUCKLE_COUNT = 3
 const HINGE_KNUCKLE_CLEARANCE = 0.5
 
+const LAYER_HEIGHT = 0.3
 const CYLINDER_RESOLUTION = 64
 const EPSILON = 1e-4
 
@@ -30,7 +31,6 @@ const knuckleHeight = (leafHeight - totalClearanceHeight) / HINGE_KNUCKLE_COUNT
 const knuckleHoleHeight = knuckleHeight + 2 * knuckleClearance
 
 const hingeRotation = 0
-
 
 function main(params) {
   const knuckles = hingeKnuckles()
@@ -51,6 +51,7 @@ function main(params) {
   )
 }
 
+
 function hingeLeaf() {
   return CSG.cube({
     corner1: [0, 0, 0],
@@ -65,18 +66,24 @@ function hingeBoltCuts() {
     for (let yIndex = 0; yIndex < HINGE_GRID_HEIGHT; yIndex++) {
       const x = (1/2 + xIndex) * GRID_SPACING
       const y = (1/2 + yIndex) * GRID_SPACING
-      bolts.push(CSG.cylinder({
-        start: [x, -EPSILON, y],
-        end: [x, leafThickness + EPSILON, y],
-        radius: HOLE_DIAMETER / 2,
-        resolution: CYLINDER_RESOLUTION
-      }))
-      bolts.push(CSG.cylinder({
-        start: [-x, -EPSILON, y],
-        end: [-x, leafThickness + EPSILON, y],
-        radius: HOLE_DIAMETER / 2,
-        resolution: CYLINDER_RESOLUTION
-      }))
+      bolts.push(
+        translate(
+          [x, -EPSILON, y],
+          teardrop({
+            height: leafThickness + 2 * EPSILON,
+            radius: HOLE_DIAMETER / 2
+          })
+        )
+      )
+      bolts.push(
+        translate(
+          [-x, -EPSILON, y],
+          teardrop({
+            height: leafThickness + 2 * EPSILON,
+            radius: HOLE_DIAMETER / 2
+          })
+        )
+      )
     }
   }
   
@@ -207,4 +214,43 @@ function hingeShaft({ height, radius }) {
   return rotate_extrude({
     fn: CYLINDER_RESOLUTION
   }, profile)
+}
+
+
+// https://hydraraptor.blogspot.com/2020/07/horiholes_36.html
+// https://hydraraptor.blogspot.com/2020/07/horiholes-2.html
+function teardrop({ height, radius }) {
+  const offset = (1/2) * LAYER_HEIGHT
+  // a semi-circle with extra radius of 1/2 * layer height
+  const semicircle = intersection(
+    CAG.circle({
+      center: [0, 0],
+      radius: radius + offset,
+      fn: CYLINDER_RESOLUTION
+    }),
+    CAG.rectangle({ center: [radius + offset, 0], radius: radius + offset })
+  )
+
+  let profile = hull(
+    // top pushed down 1/2 * layer height
+    translate([-offset, 0], semicircle),
+    // bottom pushed up 1/2 * layer height
+    translate([offset, 0], semicircle.mirroredX()),
+    // triangle to form teardrop
+    polygon({
+      points: [
+        [-radius, 0],
+        [0, 2 * radius],
+        [radius, 0],
+      ]
+    })
+  )
+  
+  // truncate
+  profile = intersection(
+    profile,
+    CAG.rectangle({ center: [0, 0], radius: radius * 1.2 /* ??? */ })
+  )
+
+  return rotate([90, 0, 0], linear_extrude({ height }, profile)).mirroredY()
 }
