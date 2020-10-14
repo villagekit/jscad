@@ -14,12 +14,13 @@ const FASTENER_CAP_HEIGHT = 3.5
 const HINGE_GRID_HEIGHT = 1
 const HINGE_GRID_WIDTH = 1
 const HINGE_THICKNESS = 6
-const HINGE_KNUCKLE_COUNT = 3
+const HINGE_KNUCKLE_COUNT = 3 // must be odd
 const HINGE_KNUCKLE_CLEARANCE = 0.4
+const HINGE_KNUCKLE_EVEN_ODD_RATIO = 3/5
 const HINGE_FASTENER_MARGIN = 2
 
 const LAYER_HEIGHT = 0.2
-const CYLINDER_RESOLUTION = 64
+const CYLINDER_RESOLUTION = 16
 const EPSILON = 1e-4
 
 const leafHeight = GRID_SPACING * (HINGE_GRID_HEIGHT - 1) + FASTENER_CAP_DIAMETER + 2 * HINGE_FASTENER_MARGIN
@@ -30,8 +31,11 @@ const knuckleClearance = HINGE_KNUCKLE_CLEARANCE
 const pinRadius = HINGE_THICKNESS / 2
 
 const totalClearanceHeight = knuckleClearance * (HINGE_KNUCKLE_COUNT - 1)
-const knuckleHeight = (leafHeight - totalClearanceHeight) / HINGE_KNUCKLE_COUNT
-const knuckleHoleHeight = knuckleHeight + 2 * knuckleClearance
+const totalKnucklesHeight = (leafHeight - totalClearanceHeight)
+const numEvenKnuckles = Math.ceil(HINGE_KNUCKLE_COUNT / 2)
+const numOddKnuckles = Math.floor(HINGE_KNUCKLE_COUNT / 2)
+const evenKnuckleHeight = totalKnucklesHeight * HINGE_KNUCKLE_EVEN_ODD_RATIO / numEvenKnuckles
+const oddKnuckleHeight = totalKnucklesHeight * (1 - HINGE_KNUCKLE_EVEN_ODD_RATIO) / numOddKnuckles
 
 const hingeRotation = 0
 
@@ -114,7 +118,11 @@ function hingeKnuckles() {
 
   for (var i = 0; i < HINGE_KNUCKLE_COUNT; i++) {
     const isEven = i % 2 === 0
-    const startHeight = i * (knuckleHeight + knuckleClearance)
+    const startHeight = Math.floor(i / 2) * (evenKnuckleHeight + oddKnuckleHeight)
+      + (i % 2) * evenKnuckleHeight
+      + i * knuckleClearance
+    const knuckleHeight = isEven ? evenKnuckleHeight : oddKnuckleHeight
+    const knuckleHoleHeight = knuckleHeight + 2 * knuckleClearance
 
     const outerCylinder = CSG.cylinder({
       start: [0, 0, startHeight],
