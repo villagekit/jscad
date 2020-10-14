@@ -8,7 +8,7 @@
 
 const GRID_SPACING = 40
 const FASTENER_HOLE_DIAMETER = 8
-const FASTENER_CAP_DIAMETER = 13
+const FASTENER_CAP_DIAMETER = 14
 const FASTENER_CAP_HEIGHT = 3.5
 
 const HINGE_GRID_HEIGHT = 1
@@ -17,7 +17,8 @@ const HINGE_THICKNESS = 6
 const HINGE_KNUCKLE_COUNT = 3 // must be odd
 const HINGE_KNUCKLE_CLEARANCE = 0.4
 const HINGE_KNUCKLE_EVEN_ODD_RATIO = 3/5
-const HINGE_FASTENER_MARGIN = 2
+const HINGE_FASTENER_MARGIN = 4
+const HINGE_ROUNDRADIUS = 0.5
 
 const LAYER_HEIGHT = 0.2
 const CYLINDER_RESOLUTION = 16
@@ -58,12 +59,46 @@ function main(params) {
   )
 }
 
+const fastenerPosition = ({ xIndex, yIndex }) => ({
+  x: (1/2 + xIndex) * GRID_SPACING,
+  y:  yIndex * GRID_SPACING + (1/2) * FASTENER_CAP_DIAMETER + HINGE_FASTENER_MARGIN,
+})
+
+const forEachFastener = (handler) => {
+  for (let xIndex = 0; xIndex < HINGE_GRID_WIDTH; xIndex++) {
+    for (let yIndex = 0; yIndex < HINGE_GRID_HEIGHT; yIndex++) {
+      handler(fastenerPosition({ xIndex, yIndex }))
+    }
+  }
+}
 
 function hingeLeaf() {
-  return CSG.cube({
-    corner1: [0, 0, 0],
-    corner2: [leafWidth, leafThickness, leafHeight],
+  const fastenerConnectorRadius = ((1/2) * FASTENER_CAP_DIAMETER) + HINGE_FASTENER_MARGIN
+
+  const fastenerConnectors = []
+  forEachFastener(({ x, y }) => {
+    fastenerConnectors.push(
+      CAG.circle({
+        center: [x, y],
+        radius: fastenerConnectorRadius,
+        fn: CYLINDER_RESOLUTION
+      })
+    )
   })
+
+  const profile = hull(
+    CAG.rectangle({
+      center: [1/2 * leafThickness, 1/2 * leafHeight],
+      radius: [1/2 * leafThickness, 1/2 * leafHeight]
+    }),
+    ...fastenerConnectors
+  )
+
+  return profile
+    .extrude({ offset: [0, 0, leafThickness] })
+    .translate([0, -1/2 * leafHeight, -1/2 * leafThickness])
+    .rotateX(90)
+    .translate([0, 1/2 * leafThickness, 1/2 * leafHeight])
 }
 
 function hingeBoltCuts() {
