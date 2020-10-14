@@ -7,20 +7,23 @@
 // - J-Max's Perfect (3d Printed) Hinge
 
 const GRID_SPACING = 40
-const HOLE_DIAMETER = 8
+const FASTENER_HOLE_DIAMETER = 8
+const FASTENER_CAP_DIAMETER = 13
+const FASTENER_CAP_HEIGHT = 3.5
 
-const HINGE_GRID_HEIGHT = 2
+const HINGE_GRID_HEIGHT = 1
 const HINGE_GRID_WIDTH = 1
-const HINGE_THICKNESS = 4
+const HINGE_THICKNESS = 6
 const HINGE_KNUCKLE_COUNT = 3
-const HINGE_KNUCKLE_CLEARANCE = 0.5
+const HINGE_KNUCKLE_CLEARANCE = 0.4
+const HINGE_FASTENER_MARGIN = 2
 
-const LAYER_HEIGHT = 0.3
+const LAYER_HEIGHT = 0.2
 const CYLINDER_RESOLUTION = 64
 const EPSILON = 1e-4
 
-const leafHeight = GRID_SPACING * HINGE_GRID_HEIGHT
-const leafWidth = GRID_SPACING * HINGE_GRID_WIDTH
+const leafHeight = GRID_SPACING * (HINGE_GRID_HEIGHT - 1) + FASTENER_CAP_DIAMETER + 2 * HINGE_FASTENER_MARGIN
+const leafWidth = GRID_SPACING * (HINGE_GRID_WIDTH - 1/2) + (1/2) * FASTENER_CAP_DIAMETER + HINGE_FASTENER_MARGIN
 const leafThickness = HINGE_THICKNESS
 const knuckleThickness = HINGE_THICKNESS
 const knuckleClearance = HINGE_KNUCKLE_CLEARANCE
@@ -60,34 +63,41 @@ function hingeLeaf() {
 }
 
 function hingeBoltCuts() {
-  let bolts = []
+  let cuts = []
   
   for (let xIndex = 0; xIndex < HINGE_GRID_WIDTH; xIndex++) {
     for (let yIndex = 0; yIndex < HINGE_GRID_HEIGHT; yIndex++) {
       const x = (1/2 + xIndex) * GRID_SPACING
-      const y = (1/2 + yIndex) * GRID_SPACING
-      bolts.push(
+      const y = yIndex * GRID_SPACING + (1/2) * FASTENER_CAP_DIAMETER + HINGE_FASTENER_MARGIN
+      cuts.push(
         translate(
           [x, -EPSILON, y],
-          teardrop({
-            height: leafThickness + 2 * EPSILON,
-            radius: HOLE_DIAMETER / 2
-          })
+          hingeBoltCut()
         )
       )
-      bolts.push(
+      cuts.push(
         translate(
           [-x, -EPSILON, y],
-          teardrop({
-            height: leafThickness + 2 * EPSILON,
-            radius: HOLE_DIAMETER / 2
-          })
+          hingeBoltCut()
         )
       )
     }
   }
   
-  return bolts
+  return cuts
+}
+
+function hingeBoltCut() {
+  return union(
+    teardrop({
+      height: FASTENER_CAP_HEIGHT + EPSILON,
+      radius: FASTENER_CAP_DIAMETER / 2
+    }),
+    teardrop({
+      height: leafThickness + 2 * EPSILON,
+      radius: FASTENER_HOLE_DIAMETER / 2
+    })
+  )
 }
 
 function hingeKnucklesCut() {
