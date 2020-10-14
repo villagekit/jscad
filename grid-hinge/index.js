@@ -124,30 +124,30 @@ function hingeKnuckles() {
     })
     
     if (isEven) {
-      const gusset = translate(
+      const connector = translate(
         [0, 0, startHeight],
-        hingeGusset({ height: knuckleHeight})
+        hingeKnuckleConnector({ height: knuckleHeight})
       )
-      const gussetHole = translate(
+      const connectorHole = translate(
         [0, 0, startHeight - knuckleClearance],
-        hingeGusset({ height: knuckleHoleHeight }).mirroredY()
+        hingeKnuckleConnector({ height: knuckleHoleHeight }).mirroredY()
       ).mirroredX()
       
       additions.push(
         union(
           outerCylinder,
-          gusset
+          connector
         )
       )
-      subtractions.push(gussetHole)
+      subtractions.push(connectorHole)
     } else {
-      const gusset = translate(
+      const connector = translate(
         [0, 0, startHeight],
-        hingeGusset({ height: knuckleHeight }).mirroredX()
+        hingeKnuckleConnector({ height: knuckleHeight }).mirroredX()
       )
-      const gussetHole = translate(
+      const connectorHole = translate(
         [0, 0, startHeight - knuckleClearance],
-        hingeGusset({ height: knuckleHoleHeight }).mirroredX().mirroredY()
+        hingeKnuckleConnector({ height: knuckleHoleHeight }).mirroredX().mirroredY()
       ).mirroredX()
       
       const shaftHole = translate(
@@ -170,14 +170,14 @@ function hingeKnuckles() {
           difference(
             union(
               outerCylinder,
-              gusset
+              connector
             ),
             shaftHole
           ),
           shaft
         )
       )
-      subtractions.push(gussetHole)
+      subtractions.push(connectorHole)
     }
   }
   
@@ -187,7 +187,7 @@ function hingeKnuckles() {
   }
 }
 
-function hingeGusset({ height }) {
+function hingeKnuckleConnector({ height }) {
   let path = new CSG.Path2D([[0, 0], [0, -knuckleThickness]])
   path = path.appendBezier([
     [0, -knuckleThickness],
@@ -197,11 +197,10 @@ function hingeGusset({ height }) {
   ], { resolution: CYLINDER_RESOLUTION })
   path = path.close()
   const profile = path.innerToCAG()
-  const strengthener = linear_extrude({ height }, profile)
+  const gusset = linear_extrude({ height }, profile)
 
-    
   return union(
-    strengthener,
+    gusset,
     CSG.cube({
       corner1: [0, 0, 0],
       corner2: [knuckleThickness + knuckleClearance, leafThickness, height]
