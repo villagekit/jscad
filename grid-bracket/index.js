@@ -23,7 +23,9 @@ const bracketThickness = BRACKET_THICKNESS
 function main() {
   return union(
     plate(),
-    plate().rotateZ(90)
+    plate().rotateZ(90),
+    support().translate([0, 0, -BRACKET_SUPPORT_THICKNESS]),
+    support().translate([0, 0, bracketWidth])
   )
 }
 
@@ -55,6 +57,17 @@ function fastenerCuts() {
     )
   }
   return union(...cuts)
+}
+
+function support() {
+   return CAG.fromPoints([
+        [0, 0],
+        [bracketLength, 0],
+        [0, bracketLength]
+      ])
+     .extrude({ offset: [0, 0, BRACKET_SUPPORT_THICKNESS] })
+     // translate to match plate positions
+     .translate([-(1/2) * bracketThickness, (-1/2) * bracketThickness, 0])
 }
 
 // https://hydraraptor.blogspot.com/2020/07/horiholes_36.html
