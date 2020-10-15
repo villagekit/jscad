@@ -78,11 +78,9 @@ function hingeLeaf() {
   const fastenerConnectors = []
   forEachFastener(({ x, y }) => {
     fastenerConnectors.push(
-      CAG.circle({
-        center: [x, y],
-        radius: fastenerConnectorRadius,
-        fn: CYLINDER_RESOLUTION
-      })
+      teardrop2d({ radius: fastenerConnectorRadius, heightCorrection: false })
+        .mirroredY()
+        .translate([x, y])
     )
   })
 
@@ -271,23 +269,36 @@ function hingeShaft({ height, radius }) {
 
 // https://hydraraptor.blogspot.com/2020/07/horiholes_36.html
 // https://hydraraptor.blogspot.com/2020/07/horiholes-2.html
-function teardrop({ height, radius }) {
-  const offset = (1/2) * LAYER_HEIGHT
+function teardrop({ height, radius, heightCorrection }) {
+  const profile = teardrop2d({ radius, heightCorrection })
+  return profile
+    .extrude({ offset: [0, 0, height] })
+    .rotateX(90)
+    .mirroredY()
+}
+
+function teardrop2d({ radius, heightCorrection = true }) {
+  const heightCorrectionOffset = heightCorrection
+    ? (1/2) * LAYER_HEIGHT
+    : 0
   // a semi-circle with extra radius of 1/2 * layer height
   const semicircle = intersection(
     CAG.circle({
       center: [0, 0],
-      radius: radius + offset,
+      radius: radius + heightCorrectionOffset,
       fn: CYLINDER_RESOLUTION
     }),
-    CAG.rectangle({ center: [radius + offset, 0], radius: radius + offset })
+    CAG.rectangle({
+      center: [radius + heightCorrectionOffset, 0],
+      radius: radius + heightCorrectionOffset
+    })
   )
 
   let profile = hull(
     // top pushed down 1/2 * layer height
-    translate([-offset, 0], semicircle),
+    translate([-heightCorrectionOffset, 0], semicircle),
     // bottom pushed up 1/2 * layer height
-    translate([offset, 0], semicircle.mirroredX()),
+    translate([heightCorrectionOffset, 0], semicircle.mirroredX()),
     // triangle to form teardrop
     polygon({
       points: [
@@ -301,8 +312,8 @@ function teardrop({ height, radius }) {
   // truncate
   profile = intersection(
     profile,
-    CAG.rectangle({ center: [0, 0], radius: radius * 1.2 /* ??? */ })
+    CAG.rectangle({ center: [0, 0], radius: radius + heightCorrectionOffset })
   )
-
-  return rotate([90, 0, 0], linear_extrude({ height }, profile)).mirroredY()
+  
+  return profile
 }
