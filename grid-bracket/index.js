@@ -15,10 +15,13 @@ const BRACKET_GRIDS = 1
 const BRACKET_THICKNESS = 4
 const BRACKET_SUPPORT_THICKNESS = 4
 const BRACKET_FASTENER_MARGIN = 1
+const BRACKET_ROUND_RADIUS = 0.5
 
+const roundRadius = BRACKET_ROUND_RADIUS
 const bracketLength = (BRACKET_GRIDS - 1/2) * GRID_SPACING + (1/2) * FASTENER_CAP_DIAMETER + BRACKET_FASTENER_MARGIN
 const bracketWidth = FASTENER_CAP_DIAMETER + 2 * BRACKET_FASTENER_MARGIN
 const bracketThickness = BRACKET_THICKNESS
+const supportThickness = BRACKET_SUPPORT_THICKNESS
 
 function main() {
   return union(
@@ -30,11 +33,12 @@ function main() {
 }
 
 function plate() {
-  let plate = CSG.cube({
-    corner1: [0, -(1/2) * bracketThickness, 0],
-    corner2: [bracketLength, (1/2) * bracketThickness, bracketWidth]
+  let plate = CSG.roundedCube({
+    corner1: [0, -(1/2) * bracketThickness, -supportThickness],
+    corner2: [bracketLength, (1/2) * bracketThickness, bracketWidth + supportThickness],
+    roundradius: BRACKET_ROUND_RADIUS,
   })
-  
+
   // cut holes for fasteners
   plate = plate.subtract(fastenerCuts())
   
@@ -61,11 +65,11 @@ function fastenerCuts() {
 
 function support() {
    return CAG.fromPoints([
-        [0, 0],
-        [bracketLength, 0],
-        [0, bracketLength]
-      ])
-     .extrude({ offset: [0, 0, BRACKET_SUPPORT_THICKNESS] })
+      [roundRadius, roundRadius],
+      [bracketLength - roundRadius, roundRadius],
+      [roundRadius, bracketLength - roundRadius]
+    ])
+     .extrude({ offset: [0, 0, supportThickness] })
      // translate to match plate positions
      .translate([-(1/2) * bracketThickness, (-1/2) * bracketThickness, 0])
 }
