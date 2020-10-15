@@ -1,5 +1,5 @@
 // title: gridkit.nz hinge
-// author: Michael Williams
+// author: Michael Williams (dinosaur.is)
 // license: CC-BY-SA
 // description: a grid-compatible hinge
 // attributions:
@@ -8,7 +8,7 @@
 
 const GRID_SPACING = 40
 const FASTENER_HOLE_DIAMETER = 8
-const FASTENER_CAP_DIAMETER = 14
+const FASTENER_CAP_DIAMETER = 13
 const FASTENER_CAP_HEIGHT = 3.5
 
 const HINGE_GRID_HEIGHT = 1
@@ -17,7 +17,7 @@ const HINGE_THICKNESS = 6
 const HINGE_KNUCKLE_COUNT = 3 // must be odd
 const HINGE_KNUCKLE_CLEARANCE = 0.4
 const HINGE_KNUCKLE_EVEN_ODD_RATIO = 3/5
-const HINGE_FASTENER_MARGIN = 4
+const HINGE_FASTENER_MARGIN = (24 - FASTENER_CAP_DIAMETER) / 2
 const HINGE_ROUNDRADIUS = 0.5
 
 const LAYER_HEIGHT = 0.2
@@ -40,22 +40,21 @@ const oddKnuckleHeight = totalKnucklesHeight * (1 - HINGE_KNUCKLE_EVEN_ODD_RATIO
 
 const hingeRotation = 0
 
+// the compenents of a hinge (and the terminology we will use):
+// - leaf: the flat solid that connects the knuckles to the fasteners
+// - knuckles: the solids which curl around the pin
+// - pin: the solid on which the hinge pivots
+// - shaft: the empty for the pin to move
+
 function main(params) {
   const knuckles = hingeKnuckles()
   return union(
     difference(
-      union(
-        hingeLeaf(),
-        rotate(
-          [0, 0, hingeRotation],
-          hingeLeaf().mirroredX()
-        )
-      ),
-      hingeKnucklesCut(),
-      ...hingeBoltCuts(),
-      ...knuckles.subtractions
+      hingeLeafs(),
+      hingeFastenerCuts(),
+      knuckles.subtraction
     ),
-    ...knuckles.additions
+    knuckles.addition
   )
 }
 
@@ -72,6 +71,20 @@ const forEachFastener = (handler) => {
   }
 }
 
+function hingeLeafs() {
+  return union(
+    // even leaf
+    hingeLeaf(),
+    // odd leaf
+    hingeLeaf()
+      .mirroredX()
+      .rotateZ(hingeRotation)
+  )
+}
+
+// the hinge leaf is constructed as the hull of:
+// - the center line
+// - a teardrop to surround each fastener
 function hingeLeaf() {
   const fastenerConnectorRadius = ((1/2) * FASTENER_CAP_DIAMETER) + HINGE_FASTENER_MARGIN
 
@@ -92,39 +105,47 @@ function hingeLeaf() {
     ...fastenerConnectors
   )
 
-  return profile
+  const leaf = profile
     .extrude({ offset: [0, 0, leafThickness] })
     .translate([0, -1/2 * leafHeight, -1/2 * leafThickness])
     .rotateX(90)
     .translate([0, 1/2 * leafThickness, 1/2 * leafHeight])
+
+  return leaf.subtract(hingeKnucklesCut())
 }
 
-function hingeBoltCuts() {
+// cut to ensure the knuckles have their basic clearance
+function hingeKnucklesCut() {
+  const cutRadius = 2 * pinRadius + knuckleClearance
+  return CSG.cube({
+     corner1: [-cutRadius, -cutRadius, -EPSILON],
+     corner2: [cutRadius, cutRadius, leafHeight + EPSILON],
+  })
+}
+
+
+function hingeFastenerCuts() {
   let cuts = []
-  
-  for (let xIndex = 0; xIndex < HINGE_GRID_WIDTH; xIndex++) {
-    for (let yIndex = 0; yIndex < HINGE_GRID_HEIGHT; yIndex++) {
-      const x = (1/2 + xIndex) * GRID_SPACING
-      const y = yIndex * GRID_SPACING + (1/2) * FASTENER_CAP_DIAMETER + HINGE_FASTENER_MARGIN
-      cuts.push(
-        translate(
-          [x, -EPSILON, y],
-          hingeBoltCut()
-        )
-      )
-      cuts.push(
-        translate(
-          [-x, -EPSILON, y],
-          hingeBoltCut()
-        )
-      )
-    }
-  }
-  
-  return cuts
+  forEachFastener(({ x, y }) => {
+    // even fasteners
+    cuts.push(
+      hingeFastenerCut()
+        .translate([x, -EPSILON, y])
+    )
+    // odd fasteners
+    cuts.push(
+      hingeFastenerCut()
+        .translate([-x, -EPSILON, y])
+        .rotateZ(hingeRotation)
+    )
+  })
+  return union(...cuts)
 }
 
-function hingeBoltCut() {
+// for each fastener, cut out:
+// - a through hole for the bolt
+// - a recessed hole for the cap
+function hingeFastenerCut() {
   return union(
     teardrop({
       height: FASTENER_CAP_HEIGHT + EPSILON,
@@ -135,14 +156,6 @@ function hingeBoltCut() {
       radius: FASTENER_HOLE_DIAMETER / 2
     })
   )
-}
-
-function hingeKnucklesCut() {
-  const cutRadius = 2 * pinRadius + knuckleClearance
-  return CSG.cube({
-     corner1: [-cutRadius, -cutRadius, -EPSILON],
-     corner2: [cutRadius, cutRadius, leafHeight + EPSILON],
-  })
 }
 
 function hingeKnuckles() {
@@ -223,8 +236,8 @@ function hingeKnuckles() {
   }
   
   return {
-    additions,
-    subtractions
+    addition: union(...additions),
+    subtraction: union(...subtractions)
   }
 }
 
@@ -286,7 +299,7 @@ function teardrop2d({ radius, heightCorrection = true }) {
     CAG.circle({
       center: [0, 0],
       radius: radius + heightCorrectionOffset,
-      fn: CYLINDER_RESOLUTION
+      resolution: CYLINDER_RESOLUTION
     }),
     CAG.rectangle({
       center: [radius + heightCorrectionOffset, 0],
