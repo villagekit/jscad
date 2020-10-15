@@ -10,12 +10,13 @@ const FASTENER_CAP_DIAMETER = 13
 const LAYER_HEIGHT = 0.2
 const CIRCLE_RESOLUTION = 16
 const EPSILON = 1e-4
+const INFINITY = 1000
 
 const BRACKET_GRIDS = 1
 const BRACKET_THICKNESS = 4
 const BRACKET_SUPPORT_THICKNESS = 4
 const BRACKET_FASTENER_MARGIN = 1
-const BRACKET_ROUND_RADIUS = 0.5
+const BRACKET_ROUND_RADIUS = 0.6
 
 const roundRadius = BRACKET_ROUND_RADIUS
 const bracketLength = (BRACKET_GRIDS - 1/2) * GRID_SPACING + (1/2) * FASTENER_CAP_DIAMETER + BRACKET_FASTENER_MARGIN
@@ -37,6 +38,7 @@ function plate() {
     corner1: [0, -(1/2) * bracketThickness, -supportThickness],
     corner2: [bracketLength, (1/2) * bracketThickness, bracketWidth + supportThickness],
     roundradius: BRACKET_ROUND_RADIUS,
+    resolution: CIRCLE_RESOLUTION
   })
 
   // cut holes for fasteners
@@ -64,14 +66,38 @@ function fastenerCuts() {
 }
 
 function support() {
-   return CAG.fromPoints([
-      [roundRadius, roundRadius],
-      [bracketLength - roundRadius, roundRadius],
-      [roundRadius, bracketLength - roundRadius]
-    ])
-     .extrude({ offset: [0, 0, supportThickness] })
-     // translate to match plate positions
-     .translate([-(1/2) * bracketThickness, (-1/2) * bracketThickness, 0])
+  const triangleLength = Math.sqrt(2) * bracketLength
+  return CSG.roundedCube({
+    corner1: [-(1/2) * triangleLength + roundRadius, -(1/2) * triangleLength + roundRadius, 0],
+    corner2: [(1/2) * triangleLength - roundRadius, (1/2) * triangleLength - roundRadius, supportThickness],
+    roundradius: BRACKET_ROUND_RADIUS,
+    resolution: CIRCLE_RESOLUTION
+  })
+    .rotateZ(45)
+    // subtract negative X
+    .subtract(CSG.cube({
+      corner1: [0, INFINITY, -INFINITY],
+      corner2: [-INFINITY, -INFINITY, INFINITY]
+    }))
+    // subtract negative Y
+    .subtract(CSG.cube({
+      corner1: [INFINITY, 0, -INFINITY],
+      corner2: [-INFINITY, -INFINITY, INFINITY]
+    }))
+    // subtract beyond X plate
+    .subtract(
+      CSG.cube({
+        corner1: [bracketLength -(1/2) * bracketThickness - roundRadius, -INFINITY, -INFINITY],
+        corner2: [bracketLength + INFINITY, INFINITY, INFINITY],
+      })
+    )
+    // subtract beyond Y plate
+    .subtract(
+      CSG.cube({
+        corner1: [-INFINITY, bracketLength -(1/2) * bracketThickness - roundRadius, -INFINITY],
+        corner2: [INFINITY, bracketLength + INFINITY, INFINITY],
+      })
+    )
 }
 
 // https://hydraraptor.blogspot.com/2020/07/horiholes_36.html
