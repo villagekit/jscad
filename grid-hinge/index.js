@@ -84,18 +84,23 @@ function hingeLeafs() {
 
 // the hinge leaf is constructed as the hull of:
 // - the center line
-// - a teardrop to surround each fastener
+// - a hex hole to surround each fastener
 function hingeLeaf() {
   const fastenerConnectorRadius = ((1/2) * FASTENER_CAP_DIAMETER) + HINGE_FASTENER_MARGIN
 
   const fastenerConnectors = []
   forEachFastener(({ x, y }) => {
     fastenerConnectors.push(
-      teardrop2d({ radius: fastenerConnectorRadius, heightCorrection: false })
-        .mirroredY()
+      CAG.circle({
+        radius: fastenerConnectorRadius,
+        resolution: 6
+      })
+        .rotateZ(30)
         .translate([x, y])
     )
   })
+
+  console.log('fastenerConnectors', fastenerConnectors)
 
   const profile = hull(
     CAG.rectangle({
@@ -147,16 +152,18 @@ function hingeFastenerCuts() {
 // - a recessed hole for the cap
 function hingeFastenerCut() {
   return union(
-    teardrop({
+    hexHole({
       height: FASTENER_CAP_HEIGHT + EPSILON,
       radius: FASTENER_CAP_DIAMETER / 2
     }),
-    teardrop({
+    hexHole({
       height: leafThickness + 2 * EPSILON,
       radius: FASTENER_HOLE_DIAMETER / 2
     })
   )
 }
+
+
 
 function hingeKnuckles() {
   const additions = []
@@ -279,54 +286,23 @@ function hingeShaft({ height, radius }) {
   }, profile)
 }
 
-
-// https://hydraraptor.blogspot.com/2020/07/horiholes_36.html
-// https://hydraraptor.blogspot.com/2020/07/horiholes-2.html
-function teardrop({ height, radius, heightCorrection }) {
-  const profile = teardrop2d({ radius, heightCorrection })
-  return profile
-    .extrude({ offset: [0, 0, height] })
-    .rotateX(90)
-    .mirroredY()
+function hexHole2d({ radius }) {
+  // https://en.wikipedia.org/wiki/Hexagon#Regular_hexagon
+  // The common length of the sides equals the radius of the circumscribed circle or circumcircle,
+  //  which equals (2/sqrt(3)) times the apothem (radius of the inscribed circle).
+  const inscribedRadius = radius
+  const circumscribedRadius = radius * (2 / Math.sqrt(3))
+  return CAG.circle({
+    center: [0, 0],
+    radius: circumscribedRadius,
+    resolution: 6
+  })
+    .rotateZ(30) 
 }
 
-function teardrop2d({ radius, heightCorrection = true }) {
-  const heightCorrectionOffset = heightCorrection
-    ? (1/2) * LAYER_HEIGHT
-    : 0
-  // a semi-circle with extra radius of 1/2 * layer height
-  const semicircle = intersection(
-    CAG.circle({
-      center: [0, 0],
-      radius: radius + heightCorrectionOffset,
-      resolution: CYLINDER_RESOLUTION
-    }),
-    CAG.rectangle({
-      center: [radius + heightCorrectionOffset, 0],
-      radius: radius + heightCorrectionOffset
-    })
-  )
-
-  let profile = hull(
-    // top pushed down 1/2 * layer height
-    translate([-heightCorrectionOffset, 0], semicircle),
-    // bottom pushed up 1/2 * layer height
-    translate([heightCorrectionOffset, 0], semicircle.mirroredX()),
-    // triangle to form teardrop
-    polygon({
-      points: [
-        [-radius, 0],
-        [0, 2 * radius],
-        [radius, 0],
-      ]
-    })
-  )
-  
-  // truncate
-  profile = intersection(
-    profile,
-    CAG.rectangle({ center: [0, 0], radius: radius + heightCorrectionOffset })
-  )
-  
-  return profile
+function hexHole({ height, radius }) {
+  return hexHole2d({ radius })
+    .extrude({ offset: [0, 0, height ]})
+    .rotateX(90)
+    .mirroredY()
 }
