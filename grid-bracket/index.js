@@ -8,7 +8,8 @@ const FASTENER_HOLE_DIAMETER = 8
 const FASTENER_CAP_DIAMETER = 13
 
 const LAYER_HEIGHT = 0.2
-const CIRCLE_RESOLUTION = 16
+const CIRCLE_RESOLUTION = 32
+const ROUNDING_RESOLUTION = 8
 const EPSILON = 1e-4
 const INFINITY = 1000
 
@@ -42,7 +43,7 @@ function bottomPlate() {
     corner1: [-supportThickness, 0, 0],
     corner2: [bracketWidth + supportThickness, bracketLength, bracketThickness],
     roundradius: BRACKET_ROUND_RADIUS,
-    resolution: CIRCLE_RESOLUTION
+    resolution: ROUNDING_RESOLUTION
   })
 }
 
@@ -61,7 +62,7 @@ function sidePlate() {
     corner1: [-supportThickness, 0, 0],
     corner2: [bracketWidth + supportThickness, bracketThickness, bracketLength],
     roundradius: BRACKET_ROUND_RADIUS,
-    resolution: CIRCLE_RESOLUTION
+    resolution: ROUNDING_RESOLUTION
   })
 }
 
@@ -91,7 +92,7 @@ function support() {
     corner1: [0, -(1/2) * triangleLength, -(1/2) * triangleLength],
     corner2: [supportThickness, (1/2) * triangleLength, (1/2) * triangleLength],
     roundradius: BRACKET_ROUND_RADIUS,
-    resolution: CIRCLE_RESOLUTION
+    resolution: ROUNDING_RESOLUTION
   })
     .rotateX(45)
     // subtract behind bottom plate
