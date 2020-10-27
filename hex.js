@@ -74,7 +74,9 @@ function createRoundedHexHole({ radius, height, roundRadius }) {
   })
 }
 
-function createRoundedHexRecess({ radius, height, roundRadius }) {
+function createRoundedHexRecess({ radius, height, center = [], roundRadius }) {
+  const [centerX = 0, centerY = 0, centerZ = 0] = center
+
   const bottomHexagon = createHexagonPolygon({ radius: radius + roundRadius })
   return bottomHexagon.solidFromSlices({
     numslices: 3,
@@ -83,17 +85,17 @@ function createRoundedHexRecess({ radius, height, roundRadius }) {
         case 0:
           return createHexagonPolygon({
             radius: radius + roundRadius,
-            zOffset: 0
+            center: [centerX, centerY, centerZ - (1/2) * height],
           })
         case 1:
           return createHexagonPolygon({
             radius: radius,
-            zOffset: roundRadius
+            center: [centerX, centerY, centerZ - (1/2) * height + roundRadius],
           })
         case 2:
           return createHexagonPolygon({
             radius: radius - roundRadius,
-            zOffset: height
+            center: [centerX, centerY, centerZ + (1/2) * height],
           })
       }
     }
@@ -102,16 +104,25 @@ function createRoundedHexRecess({ radius, height, roundRadius }) {
 
 
 // https://www.quora.com/How-can-you-find-the-coordinates-in-a-hexagon
-function createHexagonPolygon({ radius, zOffset = 0 }) {
-  const x = (Math.sqrt(3) / 2)
-  const y = (1 / 2)
+function createHexagonPolygon({ radius, center = [] }) {
+  const [centerX = 0, centerY = 0, centerZ = 0] = center
+  const circle = CAG.circle({
+    radius,
+    center: [centerX, centerY],
+    resolution: 6
+  })
 
-  return CSG.Polygon.createFromPoints([
-    [0, radius, zOffset],
-    [x * radius, y * radius, zOffset],
-    [x * radius, -y * radius, zOffset],
-    [0, -radius, zOffset],
-    [-x * radius, -y * radius, zOffset],
-    [-x * radius, y * radius, zOffset],
-  ])
+  return cagToPolygon(circle, {
+    zOffset: centerZ
+  })
+}
+
+function cagToPolygon (cag, { zOffset }) {
+  const points2d = cag.toPoints()
+
+  const points3d = points2d.map(({ _x: x, _y: y }) => {
+    return [x, y, zOffset]
+  })
+
+  return CSG.Polygon.createFromPoints(points3d)
 }
