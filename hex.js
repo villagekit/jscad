@@ -1,35 +1,30 @@
-const ROTATION = 2 * Math.PI
-
 function getParameterDefinitions() {
   return [
-	{ name: 'radius', caption: 'Radius:', type: 'float', default: 10 },
-	{ name: 'height', caption: 'Height:', type: 'float', default: 35 },
-	{ name: 'roundRadius', caption: 'Round radius:', type: 'float', default: 1 }
-  ];
+    { name: 'radius', caption: 'Radius:', type: 'float', default: 10 },
+    { name: 'height', caption: 'Height:', type: 'float', default: 35 },
+    { name: 'roundRadius', caption: 'Round radius:', type: 'float', default: 1 },
+    {
+      name: 'style',
+      caption: 'Style:',
+      type: 'choice',
+      values: ['solid', 'hole', 'recess'],
+      captions: ['Solid', 'Hole', 'Recess'],
+      initial: 'solid',
+    }
+  ]
 }
 
 function main(params) {
-  return createRoundedHexSolid(params)
+  return createRoundedHexoid(params)
 }
 
-function createRoundedHexSolid({ radius, height, roundRadius }) {
-  const hexagon = createHexagon({ radius })
-  return roundedLinearExtrude(hexagon, { height, roundRadius, style: 'solid' })
-}
-
-function createRoundedHexHole({ radius, height, roundRadius }) {
-  const hexagon = createHexagon({ radius })
-  return roundedLinearExtrude(hexagon, { height, roundRadius, style: 'hole' })
-}
-
-function createRoundedHexRecess({ radius, height, roundRadius }) {
-  const hexagon = createHexagon({ radius })
-  return roundedLinearExtrude(hexagon, { height, roundRadius, style: 'recess' })
+function createRoundedHexoid({ radius, center, height, roundRadius, style }) {
+  const hexagon = createHexagon({ radius, center })
+  return roundedLinearExtrude(hexagon, { height, roundRadius, style })
 }
 
 function createHexagon({ radius, center = [] }) {
   const [centerX = 0, centerY = 0] = center
-
   return CAG.circle({
     radius,
     center: [centerX, centerY],
@@ -37,25 +32,11 @@ function createHexagon({ radius, center = [] }) {
   })
 }
 
-function createHexagonPolygon({ radius, center = [] }) {
-  const [centerX = 0, centerY = 0, centerZ = 0] = center
-  const hexagon = createHexagon({
-    radius,
-    center: [centerX, centerY],
-  })
-
-  return cagToPolygon(hexagon, {
-    zOffset: centerZ
-  })
-}
-
 function cagToPolygon (cag, { zOffset = 0 }) {
   const points2d = cag.toPoints()
-
   const points3d = points2d.map(({ x, y }) => {
     return [x, y, zOffset]
   })
-
   return CSG.Polygon.createFromPoints(points3d)
 }
 
